@@ -56,16 +56,18 @@ cnt = 0
 t = Timer()
 step_cnt = 0
 size_index = 0
+
+# 使用batch_per_epoch实现一个epoch的训练一整个数据集
 for step in range(start_epoch * imdb.batch_per_epoch,
                   cfg.max_epoch * imdb.batch_per_epoch):
     t.tic()
     # batch
     batch = imdb.next_batch(size_index)
-    im = batch['images']
-    gt_boxes = batch['gt_boxes']
-    gt_classes = batch['gt_classes']
-    dontcare = batch['dontcare']
-    orgin_im = batch['origin_im']
+    im = batch['images']# 包含图片数组，已经经过了图像预处理
+    gt_boxes = batch['gt_boxes'] # 标注框
+    gt_classes = batch['gt_classes'] # 每个标注框的类别
+    dontcare = batch['dontcare'] # 不关心的区域 todo什么类型
+    orgin_im = batch['origin_im'] # 原始图片，没有经过处理
 
     # forward
     im_data = net_utils.np_to_variable(im,

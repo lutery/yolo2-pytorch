@@ -29,7 +29,7 @@ class ImageDataset(object):
 
         # load by self.load_dataset()
         self._image_indexes = []
-        self._image_names = []
+        self._image_names = [] # 存储所有的图片名字，这个方法需要由子类实现
         self._annotations = []
         # Use this dict for storing dataset specific config options
         self.config = {}
@@ -38,10 +38,17 @@ class ImageDataset(object):
         self._shuffle = shuffle
         self._pool_processes = processes
         self.pool = Pool(self._pool_processes)
-        self.gen = None
+        self.gen = None # todo 作用
         self._im_processor = im_processor
 
     def next_batch(self, size_index):
+        '''
+        返回一个batch的训练数据
+
+        param size_index: todo 
+        return: todo dict, 包含images, gt_boxes, gt_classes, dontcare, origin_im
+        '''
+
         batch = {'images': [], 'gt_boxes': [], 'gt_classes': [],
                  'dontcare': [], 'origin_im': []}
         i = 0
@@ -129,6 +136,10 @@ class ImageDataset(object):
 
     @property
     def image_names(self):
+        '''
+        返回所有图片的名字
+        '''
+
         return self._image_names
 
     @property
@@ -147,6 +158,9 @@ class ImageDataset(object):
 
     @property
     def num_images(self):
+        '''
+        图片的数量
+        '''
         return len(self.image_names)
 
     @property
@@ -155,8 +169,14 @@ class ImageDataset(object):
 
     @property
     def batch_size(self):
+        '''
+        每次迭代的batch大小
+        '''
         return self._batch_size
 
     @property
     def batch_per_epoch(self):
+        '''
+        TODO 这里应该是返回需要迭代多少次可以完成数据集所有数据的迭代的次数
+        '''
         return self.num_images // self.batch_size

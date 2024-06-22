@@ -13,6 +13,7 @@ from .voc_eval import voc_eval
 # from utils.yolo import preprocess_train
 
 
+# 加载数据需要子类自己实现
 class VOCDataset(ImageDataset):
     def __init__(self, imdb_name, datadir, batch_size, im_processor,
                  processes=3, shuffle=True, dst_size=None):
@@ -24,6 +25,7 @@ class VOCDataset(ImageDataset):
         self._image_set = meta[2]
         self._devkit_path = os.path.join(datadir,
                                          'VOCdevkit{}'.format(self._year))
+        # self._data_path应该是存储待训练图片的根目录
         self._data_path = os.path.join(self._devkit_path,
                                        'VOC{}'.format(self._year))
         assert os.path.exists(self._devkit_path), \
@@ -38,6 +40,8 @@ class VOCDataset(ImageDataset):
                          'sheep', 'sofa', 'train', 'tvmonitor')
         self._class_to_ind = dict(list(zip(self.classes,
                                            list(range(self.num_classes)))))
+        # 待训练图片的格式
+        # 那么可能应该是所有图片的名字都没带格式
         self._image_ext = '.jpg'
 
         self._salt = str(uuid.uuid4())
@@ -53,8 +57,13 @@ class VOCDataset(ImageDataset):
         # self.im_processor = preprocess_train
 
     def load_dataset(self):
+        '''
+        加载数据，加载数据需要子类自己实现
+        '''
         # set self._image_index and self._annotations
+        # 返回图片的名字（没有后缀名）
         self._image_indexes = self._load_image_set_index()
+        # 返回待训练图片的绝对路径
         self._image_names = [self.image_path_from_index(index)
                              for index in self.image_indexes]
         self._annotations = self._load_pascal_annotations()
@@ -81,7 +90,9 @@ class VOCDataset(ImageDataset):
     def image_path_from_index(self, index):
         """
         Construct an image path from the image's "index" identifier.
+        return 通过图片的索引构建图片的完全路径
         """
+        # 构建图片的绝对路径
         image_path = os.path.join(self._data_path, 'JPEGImages',
                                   index + self._image_ext)
         assert os.path.exists(image_path), \
@@ -91,9 +102,12 @@ class VOCDataset(ImageDataset):
     def _load_image_set_index(self):
         """
         Load the indexes listed in this dataset's image set file.
+
+        return: 返回所有待训练图片的名字
         """
         # Example path to image set file:
         # self._devkit_path + /VOCdevkit2007/VOC2007/ImageSets/Main/val.txt
+        # 这里应该是返回一个列表，列表中的每一个元素是图片的名字
         image_set_file = os.path.join(self._data_path, 'ImageSets', 'Main',
                                       self._image_set + '.txt')
         assert os.path.exists(image_set_file), \
@@ -105,6 +119,7 @@ class VOCDataset(ImageDataset):
     def _load_pascal_annotations(self):
         """
         Return the database of ground-truth regions of interest.
+        返回图片的真实目标框的区域 todo
 
         This function loads/saves from/to a cache file to speed up
         future calls.
