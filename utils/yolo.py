@@ -38,14 +38,28 @@ def nms_detections(pred_boxes, scores, nms_thresh):
 
 
 def _offset_boxes(boxes, im_shape, scale, offs, flip):
+    '''
+    根据对图片的缩放、平移、翻转等操作，将目标预测框进行偏移
+
+    param boxes: 预测框列表
+    param im_shape: 输入的图片大小（已经转换后的）
+    param scale: 缩放比例
+    param offs: 偏移量
+    param flip: 是否翻转
+    '''
+
     if len(boxes) == 0:
         return boxes
     boxes = np.asarray(boxes, dtype=np.float)
     boxes *= scale
+    # 对预测框偏移
+    # todo 这里是怎样进行偏移
     boxes[:, 0::2] -= offs[0]
     boxes[:, 1::2] -= offs[1]
+    # 如果预测框偏移到边界外，则将其置为边界
     boxes = clip_boxes(boxes, im_shape)
 
+    # todo 这里是图和进行图片翻转的操作
     if flip:
         boxes_x = np.copy(boxes[:, 0])
         boxes[:, 0] = im_shape[1] - boxes[:, 2]
@@ -55,23 +69,39 @@ def _offset_boxes(boxes, im_shape, scale, offs, flip):
 
 
 def preprocess_train(data, size_index):
+    '''
+    训练数据预处理
+
+    param data: 待训练的图片相关数据
+    param size_index: todo 未知
+    '''
+    
+    # im_path: 图片路径
+    # blob: 图片目标预测框的信息
+    # inp_size: 看代码应该是None
     im_path, blob, inp_size = data
 
+    # boxes： 目标预测框
+    # gt_classes: 目标预测框的类别
     boxes, gt_classes = blob['boxes'], blob['gt_classes']
 
     im = cv2.imread(im_path)
     ori_im = np.copy(im)
 
+    # 对图片进行缩放、平移、翻转等操作
     im, trans_param = imcv2_affine_trans(im)
     scale, offs, flip = trans_param
+    # 因为对图片进行了操作，那么预测框也要进行相应的操作
     boxes = _offset_boxes(boxes, im.shape, scale, offs, flip)
 
+    # todo 先不看，因为inp_size是None
     if inp_size is not None and size_index is not None:
         inp_size = inp_size[size_index]
         w, h = inp_size
         boxes[:, 0::2] *= float(w) / im.shape[1]
         boxes[:, 1::2] *= float(h) / im.shape[0]
         im = cv2.resize(im, (w, h))
+    # 调整图片颜色对比度等信息
     im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     im = imcv2_recolor(im)
     # im /= 255.
@@ -82,6 +112,7 @@ def preprocess_train(data, size_index):
     # im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     # im /= 255
     boxes = np.asarray(boxes, dtype=np.int)
+    # 进行图片增强后的图片，预测框，预测框的类别，不关心的区域，原始图片
     return im, boxes, gt_classes, [], ori_im
 
 

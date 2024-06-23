@@ -66,6 +66,7 @@ class VOCDataset(ImageDataset):
         # 返回待训练图片的绝对路径
         self._image_names = [self.image_path_from_index(index)
                              for index in self.image_indexes]
+        # 接收图像的真实预测框的信息
         self._annotations = self._load_pascal_annotations()
 
     def evaluate_detections(self, all_boxes, output_dir=None):

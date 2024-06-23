@@ -36,7 +36,9 @@ class ImageDataset(object):
 
         # Pool
         self._shuffle = shuffle
+        # 进程池数
         self._pool_processes = processes
+        # 创建进程池
         self.pool = Pool(self._pool_processes)
         self.gen = None # todo 作用
         self._im_processor = im_processor
@@ -56,6 +58,7 @@ class ImageDataset(object):
             indexes = np.arange(len(self.image_names), dtype=np.int)
             if self._shuffle:
                 np.random.shuffle(indexes)
+            # 采用进程池的操作，将数据放入进程池中，使用imap分别进行处理
             self.gen = self.pool.imap(partial(self._im_processor,
                                               size_index=None),
                                       ([self.image_names[i],
@@ -65,18 +68,26 @@ class ImageDataset(object):
             self._epoch += 1
             print(('epoch {} start...'.format(self._epoch)))
 
+        # 开始获取数据
         while i < self.batch_size:
             try:
+                # 从_im_processor中获取处理后的图片数据
+                # 貌似图片还没有做归一化
                 images, gt_boxes, classes, dontcare, origin_im = next(self.gen)
 
-                # multi-scale
+                # multi-scale 
+                # 这里是从一个预先设置的图片尺寸表中获取想要变换的
+                # 图片尺寸，应该也是一种图片增强操作，实现多种尺度图片的训练
                 w, h = cfg.multi_scale_inp_size[size_index]
+                # 根据获取的图片尺寸对预测框和图片进行尺寸变化
                 gt_boxes = np.asarray(gt_boxes, dtype=np.float)
                 if len(gt_boxes) > 0:
                     gt_boxes[:, 0::2] *= float(w) / images.shape[1]
                     gt_boxes[:, 1::2] *= float(h) / images.shape[0]
                 images = cv2.resize(images, (w, h))
 
+                # batch存储着：处理后的图片、预测框、预测框的类别、不关心的区域、原始图片
+                # 不关心区域看代码应该是空的
                 batch['images'].append(images)
                 batch['gt_boxes'].append(gt_boxes)
                 batch['gt_classes'].append(classes)
@@ -84,6 +95,8 @@ class ImageDataset(object):
                 batch['origin_im'].append(origin_im)
                 i += 1
             except (StopIteration,):
+                # 抛出异常，说明数据已经处理完了
+                # todo 看起来pool imap next再处理完成后会抛出StopIteration异常
                 indexes = np.arange(len(self.image_names), dtype=np.int)
                 if self._shuffle:
                     np.random.shuffle(indexes)

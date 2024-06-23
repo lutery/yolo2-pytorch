@@ -3,6 +3,9 @@ import cv2
 
 
 def imcv2_recolor(im, a=.1):
+    '''
+    对输入图像进行颜色扭曲和对比度调整，以达到图像增强的效果
+    '''
     # t = [np.random.uniform()]
     # t += [np.random.uniform()]
     # t += [np.random.uniform()]
@@ -10,8 +13,10 @@ def imcv2_recolor(im, a=.1):
     t = np.random.uniform(-1, 1, 3)
 
     # random amplify each channel
+    # 进行颜色增强
     im = im.astype(np.float)
     im *= (1 + t * a)
+    # 对比度调整
     mx = 255. * (1 + a)
     up = np.random.uniform(-1, 1)
     im = np.power(im / mx, 1. + up * .5)
@@ -20,6 +25,11 @@ def imcv2_recolor(im, a=.1):
 
 
 def imcv2_affine_trans(im):
+    '''
+    将图片进行所缩放、平移、翻转等操作，也就是图像增强
+
+    param im: 原始图片数据
+    '''
     # Scale and translate
     h, w, c = im.shape
     scale = np.random.uniform() / 10. + 1.
