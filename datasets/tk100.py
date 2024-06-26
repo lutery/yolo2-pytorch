@@ -1,5 +1,9 @@
 import torch
 from torch.utils.data import Dataset
+import pathlib
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
 
 class TK100Dataset(Dataset):
     def __init__(self, data_info_file_path, category_path, transform=None, dataset_path=r"F:\Projects\datasets\oc\TK100\data"):
@@ -8,11 +12,11 @@ class TK100Dataset(Dataset):
         self.data_info_file_path = data_info_file_path
         self.category_path = category_path
         self.transform = transform
-        self.box_names = []
-        self.box_poses = []
-        self.box_labels = []
-        self.num_boxes = []
-        self.dataset_main_path = dataset_path
+        self.image_names = []
+        self.box_poses = {}
+        self.box_labels = {}
+        self.num_images = []
+        self.dataset_main_path = pathlib.Path(dataset_path)
         self.__load_oc_data()
         self.__load_oc_category()
 
@@ -23,7 +27,7 @@ class TK100Dataset(Dataset):
 
         for line in lines:
             box_infos = line.strip().split(' ')
-            self.box_names.append(box_infos)
+            self.image_names.append(box_infos[0])
             num_boxes = (len(box_infos) - 1) // 5
             box_pos = []
             box_label = []
@@ -35,9 +39,9 @@ class TK100Dataset(Dataset):
                 label = box_infos[5 + i * 5]
                 box_pos.append([lx, ly, rx, ry])
                 box_label.append(label)
-            self.box_poses.extend(box_pos)
-            self.box_labels.extend(box_label)
-        self.num_boxes = len(self.box_poses)
+            self.box_poses[box_infos[0]] = box_pos
+            self.box_labels[box_infos[0]] = box_label
+        self.num_boxes = len(self.image_names)
 
 
     def __load_oc_category(self):
@@ -48,6 +52,20 @@ class TK100Dataset(Dataset):
         
 
     def __getitem__(self, index):
+        '''
+        对接yolov2，所以需要返回处理后的图片、预测框、预测框的类别、不关心的区域、原始图片
+                # 不关心区域看代码应该是空的
+        '''
+        image_name = self.image_names[index]
+        image_path = self.dataset_main_path / image_name
+        image = cv2.imread(str(image_path))
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # 复制一份原始图片
+        image_origin = image.copy()
+        if self.transform:
+            image = self.transform(image)
+        
+        return image, self.box_poses[image_name], self.category_2_id[self.box_labels[image_name]], [], image_origin
         
     
     def __len__(self):
@@ -58,9 +76,40 @@ if __name__ == "__main__":
     data_info_file_path = r'M:\Projects\openSource\python\yolo\pytorch-YOLO-v1\tk100.txt'
     category_path = r'M:\Projects\openSource\python\yolo\pytorch-YOLO-v1\tk100-catetory.txt'
     tk100_dataset = TK100Dataset(data_info_file_path, category_path)
-    print(tk100_dataset.category_2_id)
-    print(tk100_dataset.id_2_category)
-    print(tk100_dataset.num_boxes)
-    print(tk100_dataset.box_poses)
-    print(tk100_dataset.box_labels)
-    print(tk100_dataset.box_names)
+    # 使用matplotlib显示图片，并将预测框绘制再图片上
+     # 随机选择一个样本
+    idx = np.random.randint(0, len(tk100_dataset))
+    image, box_poses, category_id, _, image_origin = tk100_dataset[idx]
+
+    # 将图片从RGB转换为BGR (因为OpenCV默认是BGR)
+    image_origin = cv2.cvtColor(image_origin, cv2.COLOR_RGB2BGR)
+
+    # 创建figure
+    fig, ax = plt.subplots(1)
+
+    # 显示图片
+    ax.imshow(cv2.cvtColor(image_origin, cv2.COLOR_BGR2RGB))
+
+    # 绘制预测框
+    for box in box_poses:
+        x1, y1, x2, y2 = box
+        rect = plt.Rectangle((x1, y1), x2 - x1, y2 - y1, fill=False, edgecolor='red', linewidth=2)
+        ax.add_patch(rect)
+
+    # 获取类别名称
+    category_name = tk100_dataset.id_2_category[category_id]
+
+    # 设置标题
+    plt.title(f"Category: {category_name}")
+
+    # 关闭坐标轴
+    plt.axis('off')
+
+    # 显示图片
+    plt.show()
+
+    # 打印一些信息
+    print(f"Image shape: {image_origin.shape}")
+    print(f"Number of boxes: {len(box_poses)}")
+    print(f"Category ID: {category_id}")
+    print(f"Category Name: {category_name}")
