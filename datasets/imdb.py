@@ -73,6 +73,7 @@ class ImageDataset(object):
             try:
                 # 从_im_processor中获取处理后的图片数据
                 # 貌似图片还没有做归一化
+                # 并且images已经进行了缩放，但是还没做数据增强时进行尺寸变换
                 images, gt_boxes, classes, dontcare, origin_im = next(self.gen)
 
                 # multi-scale 
