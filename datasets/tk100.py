@@ -187,15 +187,15 @@ class TK100Dataset(Dataset):
         '''
         # Scale and translate
         h, w, c = im.shape
-        scale = np.random.uniform() / 10. + 1.
-        max_offx = (scale - 1.) * w
-        max_offy = (scale - 1.) * h
-        offx = int(np.random.uniform() * max_offx)
-        offy = int(np.random.uniform() * max_offy)
+        scale = np.random.uniform() / 10. + 1. # 计算缩放比例
+        max_offx = (scale - 1.) * w # 计算x轴最大偏移量，(缩放比例-1) = 缩放后尺寸/原始尺寸
+        max_offy = (scale - 1.) * h # 缩放比例-1代表缩放后的尺寸和原始尺寸的比例差值
+        offx = int(np.random.uniform() * max_offx) # 随机生成x轴偏移量，不超过最大的偏移值
+        offy = int(np.random.uniform() * max_offy) # 随机生成y轴偏移量，不超过最大的偏移值
 
-        im = cv2.resize(im, (0, 0), fx=scale, fy=scale)
-        im = im[offy: (offy + h), offx: (offx + w)]
-        flip = np.random.uniform() > 0.5
+        im = cv2.resize(im, (0, 0), fx=scale, fy=scale) # 缩放图片
+        im = im[offy: (offy + h), offx: (offx + w)] # 偏移图片
+        flip = np.random.uniform() > 0.5 # 随机生成是否翻转图片的标志
         if flip:
             im = cv2.flip(im, 1)
 
@@ -211,14 +211,15 @@ if __name__ == "__main__":
     idx = np.random.randint(0, len(tk100_dataset))
     image, box_poses, category_ids, _, image_origin = tk100_dataset[idx]
 
-    # 将图片从RGB转换为BGR (因为OpenCV默认是BGR)
-    image_origin = cv2.cvtColor(image_origin, cv2.COLOR_RGB2BGR)
+    # 要使得image能够显示，需要去掉__imcv2_recolor避免图片被转换为float
+    # 将图片从RGB转换为BGR (因为OpenCV默认是BGR) 
+    # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
     # 创建figure
     fig, ax = plt.subplots(1)
 
     # 显示图片
-    ax.imshow(cv2.cvtColor(image_origin, cv2.COLOR_BGR2RGB))
+    ax.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
     # 绘制预测框
     for box, label in zip(box_poses, category_ids):
