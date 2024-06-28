@@ -22,5 +22,5 @@ iou_thresh = 0.6
 # dataset
 imdb_train = 'voc_2007_trainval'
 imdb_test = 'voc_2007_test'
-batch_size = 1
+batch_size = 32
 train_batch_size = 16

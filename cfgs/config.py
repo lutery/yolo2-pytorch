@@ -1,5 +1,6 @@
 import os
-from .config_voc import *  # noqa
+# from .config_voc import *  # noqa
+from .config_tk100 import *
 from .exps.darknet19_exp1 import *  # noqa
 
 
